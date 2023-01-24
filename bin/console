@@ -1,0 +1,85 @@
+#!/usr/bin/env php
+<?php
+
+require __DIR__.'/../vendor/autoload.php';
+
+use Symfony\Component\Console\Application;
+use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Console\Style\SymfonyStyle;
+use Symfony\Component\HttpFoundation\Response;
+use PhpParser\Node\Stmt;
+use PhpParser\Node\Scalar;
+use Psl\Fun;
+use Functional as f;
+use Twig\Environment;
+use Twig\Loader\FilesystemLoader;
+use function Symfony\Component\String\u;
+
+$application = new Application();
+
+$application
+    ->register('generate-helpers')
+    ->setCode(function (InputInterface $input, OutputInterface $output): int {
+        $reflectedClass = new ReflectionClass(Response::class);
+        $twig = new Environment(new FilesystemLoader(__DIR__));
+        $io = new SymfonyStyle($input, $output);
+
+        $pipe = Fun\pipe(
+            strtolower(...),
+            f\partial_left(str_replace(...), "http_", ""),
+            static fn(string $s): string => u($s)->camel()->toString(),
+            static function (string $s): string {
+                $reservedWords = [
+                    'continue' => 'continueResponse'
+                ];
+
+                foreach ($reservedWords as $reservedWord => $substitution) {
+                    if ($reservedWord === $s) {
+                        return $substitution;
+                    }
+                }
+
+                return $s;
+            }
+        );
+
+        $constants = $reflectedClass->getConstants();
+        $composerJson = json_decode(file_get_contents(__DIR__ . '/../composer.json'), true, flags: JSON_THROW_ON_ERROR);
+        $composerJson['autoload']['files'] = [];
+
+        $io->progressStart(count($constants));
+
+        foreach ($constants as $constantName => $constantValue) {
+            if (!is_int($constantValue) || $constantValue < 100 || $constantValue > 511) {
+                continue;
+            }
+
+            $functionName = $pipe($constantName);
+
+            // Generate Normal Http Response helper
+            $generatedJsonHelper = $twig->render('helper-template.php.twig', ['functionName' => $functionName, 'constantName' => $constantName]);
+            file_put_contents(sprintf(__DIR__ . '/../src/%s.php', ucfirst($functionName)), $generatedJsonHelper);
+            $composerJson['autoload']['files'][] = sprintf('src/%s.php', ucfirst($functionName));
+
+            if (!is_dir(__DIR__ . '/../src/JsonResponse') && !mkdir($concurrentDirectory = __DIR__ . '/../src/JsonResponse') && !is_dir($concurrentDirectory)) {
+                throw new \RuntimeException(sprintf('Directory "%s" was not created', $concurrentDirectory));
+            }
+
+            // Generate Json Http Response helper
+            $generatedJsonHelper = $twig->render('helper-template-json.php.twig', ['functionName' => $functionName, 'constantName' => $constantName]);
+            file_put_contents(sprintf(__DIR__ . '/../src/JsonResponse/%s.php', ucfirst($functionName)), $generatedJsonHelper);
+            $composerJson['autoload']['files'][] = sprintf('src/JsonResponse/%s.php', ucfirst($functionName));
+
+            $io->progressAdvance();
+        }
+
+        file_put_contents(__DIR__ . '/../composer.json', json_encode($composerJson, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+
+        $io->progressFinish();
+
+        return Command::SUCCESS;
+    });
+
+$application->run();
