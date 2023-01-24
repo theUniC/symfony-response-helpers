@@ -19,6 +19,7 @@ namespace App\Controller;
 
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response; 
+use Symfony\Component\Routing\Annotation\Route;
 
 final class HomePageController extends AbstractController
 {
@@ -46,6 +47,7 @@ use App\Repository\UsersRepository;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Symfony\Component\Validator\ConstraintViolation;
 use Symfony\Component\Validator\Constraints as Assert;
+use Symfony\Component\Routing\Annotation\Route;
 
 final class UsersController extends AbstractController
 {
@@ -78,6 +80,7 @@ final class UsersController extends AbstractController
                     $errors,
                     static function (array $errors, ContraintViolation $cv): array {
                         $errors[$cv->getPropertyPath()] = $error->getMessage();
+                        return $errors;
                     },
                     []
                 )

@@ -2,6 +2,7 @@
     "name": "theunic/symfony-response-helpers",
     "description": "A set of helpers intended to ease the instantiation of symfony responses",
     "type": "library",
+    "keywords": ["symfony", "http", "response", "helper"],
     "require": {
         "php": ">=8.1",
         "symfony/http-foundation": "^6.2"
