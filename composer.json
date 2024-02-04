@@ -2,20 +2,26 @@
     "name": "theunic/symfony-response-helpers",
     "description": "A set of helpers intended to ease the instantiation of symfony responses",
     "type": "library",
-    "keywords": ["symfony", "http", "response", "helper"],
+    "keywords": [
+        "symfony",
+        "http",
+        "response",
+        "helper"
+    ],
     "require": {
         "php": ">=8.1",
-        "symfony/http-foundation": "^6.2"
+        "symfony/http-foundation": "^6.0 | ^7.0",
+        "symfony/filesystem": "^6.0 | ^7.0"
     },
     "require-dev": {
-        "symfony/console": "^6.2",
+        "symfony/console": "^6.0 | ^7.0",
         "twig/twig": "^3.0",
         "azjezz/psl": "^2.0",
-        "symfony/string": "^6.2",
+        "symfony/string": "^6.0 | ^7.0",
         "lstrojny/functional-php": "^1.17",
-        "phpunit/phpunit": "^9.5",
+        "phpunit/phpunit": "^10.0",
         "vimeo/psalm": "^5.6",
-        "symplify/easy-coding-standard": "11.2.4.72"
+        "symplify/easy-coding-standard": "^12.1"
     },
     "license": "MIT",
     "autoload": {

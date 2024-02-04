@@ -8,6 +8,8 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
+use Symfony\Component\Filesystem\Filesystem;
+use Symfony\Component\Filesystem\Path;
 use Symfony\Component\HttpFoundation\Response;
 use PhpParser\Node\Stmt;
 use PhpParser\Node\Scalar;
@@ -25,6 +27,10 @@ $application
         $reflectedClass = new ReflectionClass(Response::class);
         $twig = new Environment(new FilesystemLoader(__DIR__));
         $io = new SymfonyStyle($input, $output);
+
+        $filesystem = new Filesystem();
+        $filesystem->remove(Path::canonicalize(__DIR__ . '/../src'));
+        $filesystem->mkdir(Path::canonicalize(__DIR__ . '/../src'));
 
         $pipe = Fun\pipe(
             strtolower(...),
@@ -60,22 +66,31 @@ $application
 
             // Generate Normal Http Response helper
             $generatedJsonHelper = $twig->render('helper-template.php.twig', ['functionName' => $functionName, 'constantName' => $constantName]);
-            file_put_contents(sprintf(__DIR__ . '/../src/%s.php', ucfirst($functionName)), $generatedJsonHelper);
+            $filesystem->dumpFile(
+                Path::canonicalize(sprintf(__DIR__ . '/../src/%s.php', ucfirst($functionName))),
+                $generatedJsonHelper
+            );
             $composerJson['autoload']['files'][] = sprintf('src/%s.php', ucfirst($functionName));
 
-            if (!is_dir(__DIR__ . '/../src/JsonResponse') && !mkdir($concurrentDirectory = __DIR__ . '/../src/JsonResponse') && !is_dir($concurrentDirectory)) {
-                throw new \RuntimeException(sprintf('Directory "%s" was not created', $concurrentDirectory));
-            }
+            $filesystem->mkdir(
+                Path::canonicalize(__DIR__ . '/../src/JsonResponse')
+            );
 
             // Generate Json Http Response helper
             $generatedJsonHelper = $twig->render('helper-template-json.php.twig', ['functionName' => $functionName, 'constantName' => $constantName]);
-            file_put_contents(sprintf(__DIR__ . '/../src/JsonResponse/%s.php', ucfirst($functionName)), $generatedJsonHelper);
+            $filesystem->dumpFile(
+                Path::canonicalize(sprintf(__DIR__ . '/../src/JsonResponse/%s.php', ucfirst($functionName))),
+                $generatedJsonHelper
+            );
             $composerJson['autoload']['files'][] = sprintf('src/JsonResponse/%s.php', ucfirst($functionName));
 
             $io->progressAdvance();
         }
 
-        file_put_contents(__DIR__ . '/../composer.json', json_encode($composerJson, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+        $filesystem->dumpFile(
+            Path::canonicalize(__DIR__ . '/../composer.json'),
+            json_encode($composerJson, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)
+        );
 
         $io->progressFinish();
 

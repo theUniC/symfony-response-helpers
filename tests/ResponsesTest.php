@@ -41,7 +41,7 @@ final class ResponsesTest extends TestCase
         self::assertSame(json_encode($data), $response->getContent());
     }
 
-    public function functions(): iterable
+    public static function functions(): iterable
     {
         $reflectedClass = new ReflectionClass(Response::class);
 
